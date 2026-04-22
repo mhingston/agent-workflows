@@ -267,7 +267,7 @@ export class WorkflowEngine {
       return Boolean(val);
     }
 
-    const match = when.match(/^\$(state|args)\.(.+)$/);
+    const match = when.match(/^\$(state|args)\.([a-zA-Z0-9_]+)$/);
     if (match) {
       const [, scope, key] = match;
       const val = scope === "state" ? state[key] : (state as Record<string, unknown>)[key];

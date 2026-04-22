@@ -738,4 +738,26 @@ describe("WorkflowEngine", () => {
     assert.strictEqual(outcome.success, true);
     assert.strictEqual(outcome.finalState.shared_key, "from_producer");
   });
+
+  it("evaluates $state.X != true when X is false via writeState", async () => {
+    const runner = new InMemoryRunner();
+    runner.register("producer", async (_node, ctx) => {
+      ctx.writeState("flag", false);
+      return { success: true, output: "set" };
+    });
+
+    const engine = new WorkflowEngine(runner);
+
+    const workflow: WorkflowDefinition = {
+      ...makeBase(),
+      nodes: [
+        { id: "producer", deterministic: true, depends_on: [], trigger_rule: "all_succeeded", max_retries: 0, exec: { command: "produce" } },
+        { id: "consumer", deterministic: true, depends_on: ["producer"], trigger_rule: "all_succeeded", max_retries: 0, when: "$state.flag != true", exec: { command: "consume" } },
+      ],
+    };
+
+    const outcome = await engine.execute(workflow, {});
+    assert.strictEqual(outcome.success, true);
+    assert.ok(outcome.executedNodes.includes("consumer"), "consumer should run when flag is false");
+  });
 });
