@@ -1,6 +1,6 @@
 {
   "name": "@mhingston5/agent-workflows",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Standalone, repo-agnostic declarative DAG workflow engine for orchestrating agent workflows",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +14,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "node --test dist/**/*.test.js",
@@ -22,7 +24,12 @@
     "lint": "tsc --noEmit",
     "validate": "node ./dist/cli.js"
   },
-  "keywords": ["workflow", "dag", "agent", "orchestration"],
+  "keywords": [
+    "workflow",
+    "dag",
+    "agent",
+    "orchestration"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
