@@ -668,4 +668,74 @@ describe("WorkflowEngine", () => {
       await engine.execute(workflow, {});
     }, /Unsupported expression/);
   });
+
+  it("emits events via onEvent callback", async () => {
+    const runner = new InMemoryRunner();
+    const events: Array<{ type: string; nodeId: string }> = [];
+    const engine = new WorkflowEngine(runner, undefined, {
+      onEvent: (event) => events.push({ type: event.type, nodeId: event.nodeId }),
+    });
+
+    const workflow: WorkflowDefinition = {
+      ...makeBase(),
+      nodes: [
+        { id: "a", deterministic: true, depends_on: [], trigger_rule: "all_succeeded", max_retries: 0, exec: { command: "echo a" } },
+      ],
+    };
+
+    await engine.execute(workflow, {});
+    const types = events.map((e) => e.type);
+    assert.ok(types.includes("node_start"));
+    assert.ok(types.includes("node_end"));
+    assert.ok(types.includes("workflow_complete"));
+  });
+
+  it("emits workflow_failure event on failure", async () => {
+    const runner = new InMemoryRunner();
+    const events: Array<{ type: string; nodeId: string }> = [];
+    const engine = new WorkflowEngine(runner, undefined, {
+      onEvent: (event) => events.push({ type: event.type, nodeId: event.nodeId }),
+    });
+
+    runner.register("fail", async () => ({ success: false, error: "kaboom" }));
+
+    const workflow: WorkflowDefinition = {
+      ...makeBase(),
+      nodes: [
+        { id: "fail", deterministic: true, depends_on: [], trigger_rule: "all_succeeded", max_retries: 0, exec: { command: "fail" } },
+      ],
+    };
+
+    await engine.execute(workflow, {});
+    const types = events.map((e) => e.type);
+    assert.ok(types.includes("node_failure"));
+    assert.ok(types.includes("workflow_failure"));
+  });
+
+  it("exposes writeState on context for runners to set state", async () => {
+    const runner = new InMemoryRunner();
+    const engine = new WorkflowEngine(runner);
+
+    runner.register("producer", async (_node, ctx) => {
+      ctx.writeState("shared_key", "from_producer");
+      return { success: true, output: "produced" };
+    });
+
+    runner.register("consumer", async (_node, ctx) => {
+      const val = ctx.readState("shared_key");
+      return { success: true, output: val };
+    });
+
+    const workflow: WorkflowDefinition = {
+      ...makeBase(),
+      nodes: [
+        { id: "producer", deterministic: false, depends_on: [], trigger_rule: "all_succeeded", max_retries: 0, exec: { command: "produce" } },
+        { id: "consumer", deterministic: false, depends_on: ["producer"], trigger_rule: "all_succeeded", max_retries: 0, exec: { command: "consume" } },
+      ],
+    };
+
+    const outcome = await engine.execute(workflow, {});
+    assert.strictEqual(outcome.success, true);
+    assert.strictEqual(outcome.finalState.shared_key, "from_producer");
+  });
 });

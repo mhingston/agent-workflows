@@ -20,6 +20,7 @@ const mockCtx = {
   env: {},
   secrets: [],
   readState: () => undefined,
+  writeState: () => {},
   log: () => {},
 } as ExecutionContext;
 

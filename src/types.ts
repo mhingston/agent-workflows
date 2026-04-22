@@ -1,5 +1,7 @@
 import type { WorkflowNode, Artifact, EnvVar } from "./schema.js";
 
+export type EngineEventType = "node_start" | "node_end" | "node_skip" | "node_retry" | "node_failure" | "workflow_complete" | "workflow_failure" | "deterministic_skipped";
+
 export interface NodeResult {
   success: boolean;
   output?: unknown;
@@ -8,7 +10,7 @@ export interface NodeResult {
 }
 
 export interface EngineEvent {
-  type: "node_start" | "node_end" | "node_skip" | "node_retry" | "node_failure" | "workflow_complete" | "workflow_failure" | "deterministic_skipped";
+  type: EngineEventType;
   nodeId: string;
   timestamp: string;
   payload?: unknown;
@@ -19,11 +21,16 @@ export interface ExecutionContext {
   readonly env: Record<string, string>;
   readonly secrets: string[];
   readState(key: string): unknown;
-  log(event: EngineEvent): void;
+  writeState(key: string, value: unknown): void;
+  log(event: Omit<EngineEvent, "timestamp" | "nodeId"> & { nodeId?: string }): void;
 }
 
 export interface AgentWorkflowRunner {
   execute(node: WorkflowNode, context: ExecutionContext): Promise<NodeResult>;
+}
+
+export interface EngineOptions {
+  onEvent?: (event: EngineEvent) => void;
 }
 
 export interface WorkflowOutcome {

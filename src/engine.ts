@@ -1,5 +1,5 @@
 import type { WorkflowDefinition, WorkflowNode, EnvVar } from "./schema.js";
-import type { AgentWorkflowRunner, ExecutionContext, EngineEvent, WorkflowOutcome, NodeResult } from "./types.js";
+import type { AgentWorkflowRunner, ExecutionContext, EngineEvent, EngineOptions, WorkflowOutcome, NodeResult } from "./types.js";
 
 interface NodeState {
   status: "pending" | "running" | "succeeded" | "failed" | "skipped" | "deterministic_skipped";
@@ -9,7 +9,11 @@ interface NodeState {
 }
 
 export class WorkflowEngine {
-  constructor(private runner: AgentWorkflowRunner, private subWorkflowLoader?: (path: string) => Promise<WorkflowDefinition>) {}
+  private options: EngineOptions;
+
+  constructor(private runner: AgentWorkflowRunner, private subWorkflowLoader?: (path: string) => Promise<WorkflowDefinition>, options?: EngineOptions) {
+    this.options = options ?? {};
+  }
 
   async execute(workflow: WorkflowDefinition, args: Record<string, unknown>): Promise<WorkflowOutcome> {
     const state: Record<string, unknown> = { ...args };
@@ -26,7 +30,9 @@ export class WorkflowEngine {
 
     const emit = (event: Omit<EngineEvent, "timestamp">) => {
       const timestamp = new Date().toISOString();
+      const fullEvent: EngineEvent = { ...event, timestamp };
       console.log(`[${timestamp}] ${event.type}: ${event.nodeId}`);
+      this.options.onEvent?.(fullEvent);
     };
 
     let failedNodeId: string | undefined;
@@ -68,7 +74,8 @@ export class WorkflowEngine {
         env: nodeEnv,
         secrets: workflowEnv.secrets,
         readState: (key: string) => resolvedInputs[key] ?? state[key],
-        log: (event: EngineEvent) => emit({ ...event, nodeId: event.nodeId || node.id }),
+        writeState: (key: string, value: unknown) => { state[key] = value; },
+        log: (event) => emit({ ...event, nodeId: event.nodeId || node.id }),
       };
 
       let result: NodeResult | undefined;
@@ -136,6 +143,7 @@ export class WorkflowEngine {
     }
 
     if (failedNodeId) {
+      emit({ type: "workflow_failure", nodeId: failedNodeId, payload: { error: failedError } });
       return {
         success: false,
         finalState: state,
@@ -146,6 +154,7 @@ export class WorkflowEngine {
       };
     }
 
+    emit({ type: "workflow_complete", nodeId: "" });
     return {
       success: true,
       finalState: state,
@@ -454,4 +463,3 @@ export class WorkflowEngine {
     });
   }
 }
-
