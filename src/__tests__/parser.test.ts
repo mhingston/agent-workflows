@@ -134,6 +134,17 @@ describe("parseWorkflow", () => {
     assert.strictEqual(result.success, true);
   });
 
+  it("accepts invoke_skill.with with string key-value pairs", () => {
+    const result = parseWorkflow(makeWorkflow({
+      nodes: [{ id: "a", deterministic: true, depends_on: [], trigger_rule: "all_succeeded", max_retries: 0, invoke_skill: { name: "test-skill", with: { key: "value", num: "42" } } }],
+    }));
+    assert.strictEqual(result.success, true);
+    if (result.workflow) {
+      const node = result.workflow.nodes[0];
+      assert.deepStrictEqual(node.invoke_skill?.with, { key: "value", num: "42" });
+    }
+  });
+
   it("rejects invoke_skill.with referencing unknown node output", () => {
     const result = parseWorkflow(makeWorkflow({
       nodes: [

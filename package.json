@@ -1,6 +1,6 @@
 {
   "name": "@mhingston5/agent-workflows",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Standalone, repo-agnostic declarative DAG workflow engine for orchestrating agent workflows",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,6 +27,9 @@
   "license": "MIT",
   "dependencies": {
     "js-yaml": "^4.1.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.24.0 || ^4.0.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

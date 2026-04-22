@@ -27,7 +27,7 @@ export const ExecNodeSchema = z.object({
 
 export const InvokeSkillNodeSchema = z.object({
   name: z.string(),
-  with: z.record(z.string()).optional(),
+  with: z.record(z.string(), z.string()).optional(),
   env: z.array(EnvVarSchema).optional(),
   secrets: z.array(z.string()).optional(),
 });
@@ -40,7 +40,7 @@ export const GateNodeSchema = z.object({
 
 export const UsesNodeSchema = z.object({
   workflow: z.string(),
-  inputs: z.record(z.string()).optional(),
+  inputs: z.record(z.string(), z.string()).optional(),
   secrets: z.array(z.string()).optional(),
 });
 
