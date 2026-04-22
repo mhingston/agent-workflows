@@ -285,12 +285,12 @@ export class WorkflowEngine {
     if (expr === "false") return false;
     if (expr === "null") return null;
 
-    const stateMatch = expr.match(/^\$state\.(.+)$/);
+    const stateMatch = expr.match(/^\$state\.([a-zA-Z0-9_]+)$/);
     if (stateMatch) {
       return state[stateMatch[1]];
     }
 
-    const argsMatch = expr.match(/^\$args\.(.+)$/);
+    const argsMatch = expr.match(/^\$args\.([a-zA-Z0-9_]+)$/);
     if (argsMatch) {
       return state[argsMatch[1]];
     }
